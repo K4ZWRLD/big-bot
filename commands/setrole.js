@@ -4,15 +4,21 @@ const { getConfig, updateConfig } = require('../keywordRoleHandler');
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('setrole')
-    .setDescription('Set the role to assign when keywords are found in status')
+    .setDescription('Set the role to assign when keywords are found in a user\'s custom status')
     .addRoleOption(option =>
       option.setName('role')
-        .setDescription('Role to assign')
+        .setDescription('The role to assign automatically')
         .setRequired(true)
     ),
+
+  category: 'Status Rewards',
+
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-      return interaction.reply({ content: 'You need Manage Roles permission to use this.', ephemeral: true });
+      return interaction.reply({
+        content: '❌ You need the **Manage Roles** permission to use this command.',
+        ephemeral: true,
+      });
     }
 
     const role = interaction.options.getRole('role');
@@ -23,6 +29,9 @@ module.exports = {
 
     updateConfig(config);
 
-    await interaction.reply({ content: `Role set to: ${role.name}`, ephemeral: true });
+    return interaction.reply({
+      content: `✅ The keyword role has been set to **${role.name}**.`,
+      ephemeral: true,
+    });
   }
 };
