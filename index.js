@@ -19,6 +19,7 @@ function saveSpotifyTokens(data) {
 let tokens = loadSpotifyTokens();
 
 const { fetchAndLogCurrentlyPlaying } = require('./scrobbleLogger');
+const { handlePresenceUpdate } = require('./keywordRoleHandler'); // <-- ADDED
 
 // 🔁 Poll Spotify every 1 minute for all users
 setInterval(() => {
@@ -105,6 +106,7 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildPresences, // <-- ADDED to get presenceUpdate events
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
@@ -260,6 +262,15 @@ client.on('messageReactionAdd', async (reaction, user) => {
     saveJson('./xp.json', xpData);
 
     pendingReactions = pendingReactions.filter(p => p.messageId !== pr.messageId);
+  }
+});
+
+// <-- ADDED presenceUpdate listener for keyword role assigner
+client.on('presenceUpdate', async (oldPresence, newPresence) => {
+  try {
+    await handlePresenceUpdate(client, oldPresence, newPresence);
+  } catch (error) {
+    console.error('Error handling presence update:', error);
   }
 });
 
