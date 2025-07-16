@@ -7,6 +7,14 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const TOKENS_PATH = './spotify_tokens.json';
+const { fetchAndLogCurrentlyPlaying } = require('./scrobbleLogger');
+const tokens = loadSpotifyTokens(); // Your function to load saved tokens
+
+setInterval(() => {
+  for (const discordUserId in tokens) {
+    fetchAndLogCurrentlyPlaying(discordUserId, tokens[discordUserId]);
+  }
+}, 1 * 60 * 1000); // every 1 minute
 
 function loadSpotifyTokens() {
   if (!fs.existsSync(TOKENS_PATH)) return {};
