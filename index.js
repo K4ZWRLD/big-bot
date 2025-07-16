@@ -196,6 +196,16 @@ function monitorActivity() {
 
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
+    // Set presence
+  client.user.setPresence({
+    status: 'dnd', // Options: 'online' | 'idle' | 'dnd' | 'invisible'
+    activities: [
+      {
+        name: 'type /help or vibe ✨',
+        type: 0 // 0 = Playing, 1 = Streaming, 2 = Listening, 3 = Watching, 5 = Competing
+      }
+    ]
+  });
 
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   const appId = (await client.application.fetch()).id;
