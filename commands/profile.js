@@ -10,13 +10,14 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('profile')
     .setDescription('Show your Spotify listening stats'),
+  category: 'Spotify',
 
   async execute(interaction) {
     const userId = interaction.user.id;
     const scrobbles = loadScrobbles();
 
     if (!scrobbles[userId] || scrobbles[userId].length === 0) {
-      return interaction.reply({ content: 'No scrobble data found. Listen to some music first!', ephemeral: true });
+      return interaction.reply({ content: 'No scrobble data found. Listen to some music first!', flags: 64 });
     }
 
     // Count plays per artist and track
@@ -50,6 +51,6 @@ module.exports = {
       .setColor('Green')
       .setTimestamp();
 
-    await interaction.reply({ embeds: [embed], ephemeral: false });
+    await interaction.reply({ embeds: [embed], flags: 64 });
   },
 };
