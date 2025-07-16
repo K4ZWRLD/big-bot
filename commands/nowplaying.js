@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const fs = require('fs');
 
@@ -35,6 +35,8 @@ module.exports = {
   data: new SlashCommandBuilder()
     .setName('nowplaying')
     .setDescription('Show your currently playing Spotify track'),
+  
+  category: 'Spotify',
 
   async execute(interaction) {
     const discordUserId = interaction.user.id;
@@ -43,7 +45,7 @@ module.exports = {
     if (!tokens[discordUserId]) {
       return interaction.reply({
         content: `You need to link your Spotify account first. Please [click here to login](${process.env.SERVER_URL}/login?user=${discordUserId})`,
-        ephemeral: true,
+        flags: 64,
       });
     }
 
@@ -67,7 +69,7 @@ module.exports = {
         console.error('Failed to refresh token:', e);
         return interaction.reply({
           content: 'Failed to refresh Spotify token. Please link your account again.',
-          ephemeral: true,
+          flags: 64,
         });
       }
     }
@@ -78,23 +80,23 @@ module.exports = {
       });
 
       if (res.status === 204 || !res.data || !res.data.item) {
-        return interaction.reply({ content: 'No track is currently playing.', ephemeral: true });
+        return interaction.reply({ content: 'No track is currently playing.', flags: 64 });
       }
 
       const track = res.data.item;
       const artists = track.artists.map((a) => a.name).join(', ');
-      const embed = {
-        title: track.name,
-        url: track.external_urls.spotify,
-        description: `by **${artists}**`,
-        thumbnail: { url: track.album.images[0]?.url },
-        color: 0x1DB954,
-      };
+      const embed = new EmbedBuilder()
+        .setTitle(track.name)
+        .setURL(track.external_urls.spotify)
+        .setDescription(`by **${artists}**`)
+        .setThumbnail(track.album.images[0]?.url)
+        .setColor(0x1DB954)
+        .setTimestamp();
 
-      interaction.reply({ embeds: [embed] });
+      interaction.reply({ embeds: [embed], flags: 64 });
     } catch (e) {
       console.error('Spotify API error:', e.response?.data || e.message);
-      interaction.reply({ content: 'Failed to get currently playing track.', ephemeral: true });
+      interaction.reply({ content: 'Failed to get currently playing track.', flags: 64 });
     }
   },
 };
