@@ -2,10 +2,13 @@ const { SlashCommandBuilder } = require('discord.js');
 const { getListeningHistory } = require('../scrobbleLogger');
 
 module.exports = {
+  category: 'Spotify',
+
   data: new SlashCommandBuilder()
     .setName('compare')
     .setDescription('Compare top tracks with another user')
     .addUserOption(opt => opt.setName('user').setDescription('User to compare with').setRequired(true)),
+
   async execute(interaction) {
     const user1 = interaction.user.id;
     const user2 = interaction.options.getUser('user').id;
@@ -18,11 +21,11 @@ module.exports = {
 
     const shared = [...tracks1].filter(t => tracks2.has(t)).slice(0, 10);
 
-    await interaction.reply({
+    return interaction.reply({
       content: shared.length
         ? `📀 Shared Top Tracks:\n${shared.map(t => `• ${t}`).join('\n')}`
         : 'You have no tracks in common.',
-      ephemeral: true
+      flags: 0,  // no ephemeral flag, so public message
     });
   }
 };
