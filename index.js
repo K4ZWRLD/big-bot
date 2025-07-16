@@ -7,14 +7,6 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const TOKENS_PATH = './spotify_tokens.json';
-const { fetchAndLogCurrentlyPlaying } = require('./scrobbleLogger');
-const tokens = loadSpotifyTokens(); // Your function to load saved tokens
-
-setInterval(() => {
-  for (const discordUserId in tokens) {
-    fetchAndLogCurrentlyPlaying(discordUserId, tokens[discordUserId]);
-  }
-}, 1 * 60 * 1000); // every 1 minute
 
 function loadSpotifyTokens() {
   if (!fs.existsSync(TOKENS_PATH)) return {};
@@ -23,6 +15,18 @@ function loadSpotifyTokens() {
 function saveSpotifyTokens(data) {
   fs.writeFileSync(TOKENS_PATH, JSON.stringify(data, null, 2));
 }
+
+let tokens = loadSpotifyTokens();
+
+const { fetchAndLogCurrentlyPlaying } = require('./scrobbleLogger');
+
+// 🔁 Poll Spotify every 1 minute for all users
+setInterval(() => {
+  tokens = loadSpotifyTokens(); // refresh from disk in case it changes
+  for (const userId in tokens) {
+    fetchAndLogCurrentlyPlaying(userId, tokens[userId]);
+  }
+}, 60 * 1000); // 1 minute
 
 app.get('/login', (req, res) => {
   const discordUserId = req.query.user;
@@ -53,18 +57,15 @@ app.get('/callback', async (req, res) => {
       }),
       {
         headers: {
-          Authorization:
-            'Basic ' +
-            Buffer.from(
-              `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
-            ).toString('base64'),
+          Authorization: 'Basic ' + Buffer.from(
+            `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+          ).toString('base64'),
           'Content-Type': 'application/x-www-form-urlencoded',
         },
       }
     );
 
     const { access_token, refresh_token, expires_in } = resp.data;
-    const tokens = loadSpotifyTokens();
     tokens[discordUserId] = {
       access_token,
       refresh_token,
@@ -79,7 +80,6 @@ app.get('/callback', async (req, res) => {
   }
 });
 
-// Global Express error handler
 app.use((err, req, res, next) => {
   console.error('Express error:', err);
   res.status(500).send('Internal server error');
@@ -142,7 +142,6 @@ loadCommands(path.join(__dirname, 'commands'));
 let pendingReactions = [];
 let lastActivity = {};
 
-// Implemented monitorActivity to send boredom events on inactivity
 function monitorActivity() {
   setInterval(async () => {
     const now = Date.now();
@@ -152,7 +151,7 @@ function monitorActivity() {
       if (!settings?.enabled || !settings.channelId) continue;
 
       const last = lastActivity[guildId]?.time || 0;
-      const inactivityLimit = settings.inactivity || 600000; // default 10 min
+      const inactivityLimit = settings.inactivity || 600000;
 
       if (now - last > inactivityLimit) {
         try {
@@ -160,7 +159,6 @@ function monitorActivity() {
           if (!channel?.isTextBased()) continue;
 
           const events = [
-            // Default boredom events
             () => '💬 Would you rather be able to fly or turn invisible?',
             () => '🧠 Trivia: What’s the only food that never spoils? (Hint: honey)',
             () => '🔤 Type a sentence without the letter E!',
@@ -171,7 +169,6 @@ function monitorActivity() {
               return { type: 'reaction_race', emoji: chosen, reward: 15 };
             },
             () => '🎶 New vibe drop: https://youtu.be/dQw4w9WgXcQ',
-            // Add custom guild events if any
             ...(customEvents[guildId] || []),
           ];
 
@@ -192,13 +189,12 @@ function monitorActivity() {
         }
       }
     }
-  }, 120000); // check every 2 minutes
+  }, 120000);
 }
 
 client.once('ready', async () => {
   console.log(`Logged in as ${client.user.tag}`);
 
-  // Register slash commands globally
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
   const appId = (await client.application.fetch()).id;
 
@@ -212,7 +208,6 @@ client.once('ready', async () => {
   monitorActivity();
 });
 
-// Slash command interaction handler
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -241,7 +236,6 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Track activity for inactivity detection
 client.on('messageCreate', message => {
   if (message.author.bot || !message.guild) return;
 
@@ -253,7 +247,6 @@ client.on('messageCreate', message => {
   }
 });
 
-// Reaction race winner handling
 client.on('messageReactionAdd', async (reaction, user) => {
   if (reaction.partial) await reaction.fetch();
   if (user.bot) return;
@@ -263,7 +256,6 @@ client.on('messageReactionAdd', async (reaction, user) => {
     pr.winner = user.id;
     reaction.message.reply(`🎉 <@${user.id}> won the reaction race!`);
 
-    // Add XP reward for reaction race win (default 10 XP)
     xpData[user.id] = (xpData[user.id] || 0) + (pr.reward || 10);
     saveJson('./xp.json', xpData);
 
