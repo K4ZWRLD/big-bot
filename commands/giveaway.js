@@ -23,6 +23,8 @@ function formatMessage(template, data) {
 }
 
 module.exports = {
+  category: 'Giveaways',
+
   data: new SlashCommandBuilder()
     .setName('giveaway')
     .setDescription('Manage giveaways')
