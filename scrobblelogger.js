@@ -1,63 +1,64 @@
 const axios = require('axios');
+const { loadSpotifyTokens, refreshAccessToken } = require('./spotifyAuth');
 const fs = require('fs');
 
-const DATA_FILE = './scrobbles.json';
-
-// Load or create scrobbles data
-function loadScrobbles() {
-  if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, '{}');
-  return JSON.parse(fs.readFileSync(DATA_FILE));
+const XP_FILE = './xp.json';
+function loadXP() {
+  if (!fs.existsSync(XP_FILE)) fs.writeFileSync(XP_FILE, '{}');
+  return JSON.parse(fs.readFileSync(XP_FILE));
 }
-function saveScrobbles(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+function saveXP(data) {
+  fs.writeFileSync(XP_FILE, JSON.stringify(data, null, 2));
 }
 
-// Call this periodically (e.g., every 1-2 mins) for each user with tokens
-async function fetchAndLogCurrentlyPlaying(discordUserId, tokens) {
+async function fetchAndLogCurrentlyPlaying(discordUserId) {
+  const tokensData = loadSpotifyTokens();
+  let tokens = tokensData[discordUserId];
+  if (!tokens) {
+    console.log(`No tokens found for user ${discordUserId}`);
+    return;
+  }
+
+  // Refresh if token expired or about to expire (1 min buffer)
+  if (Date.now() > (tokens.expires_at - 60 * 1000)) {
+    const refreshed = await refreshAccessToken(discordUserId);
+    if (refreshed) {
+      const updatedTokensData = loadSpotifyTokens();
+      tokens = updatedTokensData[discordUserId];
+    } else {
+      console.log(`Could not refresh token for user ${discordUserId}, skipping fetch.`);
+      return;
+    }
+  }
+
   try {
     const resp = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
       headers: { Authorization: `Bearer ${tokens.access_token}` },
     });
 
-    if (resp.status === 204 || !resp.data || !resp.data.item) return; // no track playing
+    if (resp.status === 204 || !resp.data || !resp.data.item) {
+      // No track playing
+      return;
+    }
 
     const track = resp.data.item;
     const artistNames = track.artists.map(a => a.name).join(', ');
     const trackName = track.name;
-    const trackId = track.id;
-    const timestamp = Date.now();
 
-    let scrobbles = loadScrobbles();
-    if (!scrobbles[discordUserId]) scrobbles[discordUserId] = [];
+    // Load XP file
+    const xpData = loadXP();
 
-    // Avoid duplicate logs for the same track played recently (optional)
-    const userScrobbles = scrobbles[discordUserId];
-    if (userScrobbles.length > 0) {
-      const last = userScrobbles[userScrobbles.length - 1];
-      if (last.trackId === trackId && timestamp - last.timestamp < 1000 * 60 * 3) {
-        // skip if same track played within last 3 minutes
-        return;
-      }
-    }
+    // Award XP - customize this as you want
+    xpData[discordUserId] = (xpData[discordUserId] || 0) + 5;
 
-    userScrobbles.push({
-      trackId,
-      trackName,
-      artistNames,
-      timestamp,
-    });
+    saveXP(xpData);
 
-    saveScrobbles(scrobbles);
-    console.log(`Logged track for user ${discordUserId}: ${artistNames} - ${trackName}`);
+    console.log(`Logged scrobble for ${discordUserId}: ${artistNames} - ${trackName}`);
   } catch (e) {
-    // Handle token expired: you may want to refresh tokens here
-    if (e.response && e.response.status === 401) {
-      console.log(`Access token expired for user ${discordUserId}, refresh needed.`);
-      // You should implement a refresh token flow here to get a new access token
-    } else {
-      console.error(`Failed to fetch currently playing for ${discordUserId}:`, e.message);
-    }
+    console.error(`Failed to fetch currently playing for ${discordUserId}:`, e.message);
   }
 }
 
-module.exports = { fetchAndLogCurrentlyPlaying };
+module.exports = {
+  fetchAndLogCurrentlyPlaying,
+};
