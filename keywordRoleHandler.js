@@ -13,10 +13,6 @@ function saveConfig(config) {
 
 let keywordRoleConfig = loadConfig();
 
-/**
- * Call this function in your main bot file inside
- * client.on('presenceUpdate', (oldPresence, newPresence) => { ... })
- */
 async function handlePresenceUpdate(client, oldPresence, newPresence) {
   if (!newPresence || !newPresence.guild) return;
 
@@ -35,6 +31,8 @@ async function handlePresenceUpdate(client, oldPresence, newPresence) {
 
   const roleId = config.roleId;
   const keywords = (config.keywords || []).map(k => k.toLowerCase());
+  const channelId = config.channelId;
+  const messageTemplate = config.message || "{user} now has the role {role} because their status contains a keyword!";
 
   // Find custom status activity
   const customStatus = newPresence.activities.find(act => act.type === 4);
@@ -48,6 +46,21 @@ async function handlePresenceUpdate(client, oldPresence, newPresence) {
     try {
       await member.roles.add(roleId);
       console.log(`Added role to ${member.user.tag} in guild ${guildId}`);
+
+      // Send message if channel and message set
+      if (channelId && messageTemplate) {
+        try {
+          const channel = await newPresence.guild.channels.fetch(channelId);
+          if (channel?.isTextBased()) {
+            const msg = messageTemplate
+              .replace(/{user}/g, `<@${member.id}>`)
+              .replace(/{role}/g, `<@&${roleId}>`);
+            await channel.send(msg);
+          }
+        } catch (err) {
+          console.error(`Failed to send message in guild ${guildId}:`, err);
+        }
+      }
     } catch (err) {
       console.error(`Failed to add role in guild ${guildId}:`, err);
     }
@@ -55,6 +68,22 @@ async function handlePresenceUpdate(client, oldPresence, newPresence) {
     try {
       await member.roles.remove(roleId);
       console.log(`Removed role from ${member.user.tag} in guild ${guildId}`);
+
+      // Optionally send a message when role is removed
+      if (channelId && messageTemplate) {
+        try {
+          const channel = await newPresence.guild.channels.fetch(channelId);
+          if (channel?.isTextBased()) {
+            const msg = messageTemplate
+              .replace(/{user}/g, `<@${member.id}>`)
+              .replace(/{role}/g, `<@&${roleId}>`)
+              .replace(/{removed}/g, 'lost'); // optional variable
+            await channel.send(msg);
+          }
+        } catch (err) {
+          console.error(`Failed to send message in guild ${guildId}:`, err);
+        }
+      }
     } catch (err) {
       console.error(`Failed to remove role in guild ${guildId}:`, err);
     }
