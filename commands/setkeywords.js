@@ -7,24 +7,35 @@ module.exports = {
     .setDescription('Set keywords to watch in user custom statuses (comma separated)')
     .addStringOption(option =>
       option.setName('keywords')
-        .setDescription('Comma-separated keywords')
+        .setDescription('Comma-separated list of keywords (e.g., anime,valorant,coding)')
         .setRequired(true)
     ),
+
+  category: 'Keyword Roles',
+
   async execute(interaction) {
     if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
-      return interaction.reply({ content: 'You need Manage Roles permission to use this.', ephemeral: true });
+      return interaction.reply({
+        content: '❌ You need the **Manage Roles** permission to use this command.',
+        ephemeral: true
+      });
     }
 
-    const keywordsInput = interaction.options.getString('keywords');
-    const keywords = keywordsInput.split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    const input = interaction.options.getString('keywords');
+    const keywords = input
+      .split(',')
+      .map(k => k.trim().toLowerCase())
+      .filter(Boolean);
 
     const config = getConfig();
-
     if (!config[interaction.guild.id]) config[interaction.guild.id] = {};
-    config[interaction.guild.id].keywords = keywords;
 
+    config[interaction.guild.id].keywords = keywords;
     updateConfig(config);
 
-    await interaction.reply({ content: `Keywords set to: ${keywords.join(', ')}`, ephemeral: true });
+    return interaction.reply({
+      content: `✅ Keywords updated: \`${keywords.join(', ')}\``,
+      ephemeral: true
+    });
   }
 };
