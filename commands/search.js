@@ -22,19 +22,21 @@ async function getSpotifyToken(clientId, clientSecret) {
   });
 
   spotifyToken = res.data.access_token;
-  tokenExpiresAt = Date.now() + (res.data.expires_in - 60) * 1000; // refresh 1 min early
+  tokenExpiresAt = Date.now() + (res.data.expires_in - 60) * 1000;
   return spotifyToken;
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('search')
-    .setDescription('Search Spotify tracks')
+    .setDescription('🔍 Search for Spotify tracks by name')
     .addStringOption(option =>
       option.setName('query')
-        .setDescription('Search term')
+        .setDescription('Song, artist, or album to search for')
         .setRequired(true)
     ),
+
+  category: 'Spotify',
 
   async execute(interaction) {
     const query = interaction.options.getString('query');
@@ -42,7 +44,10 @@ module.exports = {
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
-      return interaction.reply({ content: 'Spotify API credentials not set.', ephemeral: true });
+      return interaction.reply({
+        content: '❌ Spotify API credentials are not set.',
+        ephemeral: true
+      });
     }
 
     await interaction.deferReply();
@@ -60,23 +65,24 @@ module.exports = {
       });
 
       const tracks = response.data.tracks.items;
-      if (tracks.length === 0) {
-        return interaction.editReply('No tracks found.');
+      if (!tracks.length) {
+        return interaction.editReply('⚠️ No tracks found.');
       }
 
       const embed = {
-        title: `Search results for "${query}"`,
+        title: `🎵 Spotify Search Results: "${query}"`,
         description: tracks.map((track, i) => {
           const artists = track.artists.map(a => a.name).join(', ');
           return `**${i + 1}. [${track.name}](${track.external_urls.spotify})** by ${artists}`;
-        }).join('\n'),
+        }).join('\n\n'),
         color: 0x1DB954,
+        footer: { text: 'Powered by Spotify' }
       };
 
       interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('Spotify search error:', error.response?.data || error.message);
-      interaction.editReply('Failed to search Spotify.');
+      interaction.editReply('❌ Failed to search Spotify. Try again later.');
     }
   },
 };
