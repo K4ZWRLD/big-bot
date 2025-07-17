@@ -6,7 +6,7 @@ const express = require('express');
 const { handleSpotifyOAuth, refreshSpotifyTokens } = require('./spotifyOAuth');
 const { fetchAndLogCurrentlyPlaying } = require('./scrobbleLogger');
 const { handlePresenceUpdate } = require('./presenceHandler');
-const { loadDailyConfig, getGuildDailyConfig, getNextTrack, sendDailySpotifyMessage } = require('./utils/dailySpotify');
+const { loadDailyConfig, getGuildDailyConfig, getNextTrack, sendDailySpotifyMessage } = require('../utils/dailySpotify');
 const config = require('./config.json');
 
 const client = new Client({
