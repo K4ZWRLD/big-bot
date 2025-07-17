@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { updateGuildConfig } = require('../dailySpotify');
+const { updateGuildConfig }  = require('../utils/dailySpotify');
 
 module.exports = {
     category: 'Spotify Daily',
