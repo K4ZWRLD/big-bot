@@ -1,0 +1,10 @@
+{
+  "guilds": {
+    "123456789012345678": {
+      "keywordRoles": {
+        "spotify": "ROLE_ID_1",
+        "minecraft": "ROLE_ID_2"
+      }
+    }
+  }
+}
