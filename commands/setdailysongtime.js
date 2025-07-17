@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { updateGuildConfig } = require('../dailySpotify');
 
 module.exports = {
+      category: 'Spotify Daily',
   data: new SlashCommandBuilder()
     .setName('setdailysongtime')
     .setDescription('Set the daily song send time (cron format)')
