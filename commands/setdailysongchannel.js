@@ -1,19 +1,15 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { saveJson, loadJson } = require('../../utils/json');
+const { updateGuildConfig } = require('../dailySpotify');
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('setdailysongchannel')
-    .setDescription('Set the channel where daily songs will be posted')
+    .setName('setsongchannel')
+    .setDescription('Set the channel where the daily song is sent')
     .addChannelOption(opt =>
-      opt.setName('channel').setDescription('Target channel').setRequired(true)
-    ),
-  category: 'Spotify',
-
+      opt.setName('channel').setDescription('Target channel').setRequired(true)),
   async execute(interaction) {
-    const config = loadJson('./config/dailySpotify.json');
-    config.channel = interaction.options.getChannel('channel').id;
-    saveJson('./config/dailySpotify.json', config);
-    await interaction.reply({ content: '✅ Channel set.', flags: 64 });
+    const channel = interaction.options.getChannel('channel');
+    updateGuildConfig(interaction.guild.id, { channel: channel.id });
+    interaction.reply({ content: `✅ Channel set to ${channel}`, flags: 64 });
   }
 };
