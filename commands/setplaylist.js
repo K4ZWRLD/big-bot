@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { updateGuildConfig } = require('../dailySpotify');
 
 module.exports = {
+    category: 'Spotify Daily',
   data: new SlashCommandBuilder()
     .setName('setplaylist')
     .setDescription('Set the Spotify playlist to use')
