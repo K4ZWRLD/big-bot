@@ -1,6 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { saveDailySpotifyConfig, getDailySpotifyConfig } = require('../utils/dailySpotifyConfig');
-
+const { saveDailySpotifyConfig, getDailySpotifyConfig }  = require('../utils/dailySpotify');
 module.exports = {
   category: 'Spotify Daily',
   data: new SlashCommandBuilder()
