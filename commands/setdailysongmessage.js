@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const { saveJson, loadJson } = require('../../utils/json');
+const { saveJson, loadJson } = require('../utils/dailySpotify');
 
 module.exports = {
   data: new SlashCommandBuilder()
