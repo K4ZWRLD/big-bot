@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { getAccessToken } = require('./spotifyOAuth');
+const { getAccessToken } = require('../spotifyOAuth');
 
 const CONFIG_PATH = path.join(__dirname, 'config', 'dailySpotify.json');
 let config = {};
