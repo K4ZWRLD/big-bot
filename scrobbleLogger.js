@@ -1,14 +1,30 @@
 const axios = require('axios');
-const { loadSpotifyTokens, refreshAccessToken } = require('./spotifyAuth');
 const fs = require('fs');
 
 const XP_FILE = './xp.json';
+const LISTENING_HISTORY_FILE = './listening_history.json';
+
 function loadXP() {
   if (!fs.existsSync(XP_FILE)) fs.writeFileSync(XP_FILE, '{}');
   return JSON.parse(fs.readFileSync(XP_FILE));
 }
+
 function saveXP(data) {
   fs.writeFileSync(XP_FILE, JSON.stringify(data, null, 2));
+}
+
+function loadListeningHistory() {
+  if (!fs.existsSync(LISTENING_HISTORY_FILE)) fs.writeFileSync(LISTENING_HISTORY_FILE, '{}');
+  return JSON.parse(fs.readFileSync(LISTENING_HISTORY_FILE));
+}
+
+function saveListeningHistory(data) {
+  fs.writeFileSync(LISTENING_HISTORY_FILE, JSON.stringify(data, null, 2));
+}
+
+function getListeningHistory(userId) {
+  const data = loadListeningHistory();
+  return data[userId] || [];
 }
 
 async function fetchAndLogCurrentlyPlaying(discordUserId) {
@@ -45,12 +61,22 @@ async function fetchAndLogCurrentlyPlaying(discordUserId) {
     const artistNames = track.artists.map(a => a.name).join(', ');
     const trackName = track.name;
 
-    // Load XP file
+    // Save to listening history
+    const listeningHistory = loadListeningHistory();
+
+    if (!listeningHistory[discordUserId]) listeningHistory[discordUserId] = [];
+
+    listeningHistory[discordUserId].push({
+      artist: artistNames,
+      track: trackName,
+      timestamp: Date.now(),
+    });
+
+    saveListeningHistory(listeningHistory);
+
+    // Award XP
     const xpData = loadXP();
-
-    // Award XP - customize this as you want
     xpData[discordUserId] = (xpData[discordUserId] || 0) + 5;
-
     saveXP(xpData);
 
     console.log(`Logged scrobble for ${discordUserId}: ${artistNames} - ${trackName}`);
@@ -61,4 +87,5 @@ async function fetchAndLogCurrentlyPlaying(discordUserId) {
 
 module.exports = {
   fetchAndLogCurrentlyPlaying,
+  getListeningHistory,
 };
