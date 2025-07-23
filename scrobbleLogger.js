@@ -1,8 +1,11 @@
 const axios = require('axios');
 const fs = require('fs');
+const { loadSpotifyTokens, refreshAccessToken } = require('./spotifyOAuth');  // Add this import
 
 const XP_FILE = './xp.json';
 const LISTENING_HISTORY_FILE = './listening_history.json';
+
+// ... rest of your code ...
 
 function loadXP() {
   if (!fs.existsSync(XP_FILE)) fs.writeFileSync(XP_FILE, '{}');
