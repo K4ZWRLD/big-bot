@@ -121,9 +121,10 @@ function handleSpotifyOAuth(app) {
 }
 
 module.exports = {
-  loadTokens,
-  saveTokens,
-  refreshToken,
+  loadSpotifyTokens: loadTokens,
+  saveSpotifyTokens: saveTokens,
+  refreshAccessToken: refreshToken,
   refreshSpotifyTokens,
   handleSpotifyOAuth,
 };
+
