@@ -1,5 +1,5 @@
 const axios = require('axios');
-const fs = require('fs')
+const fs = require('fs');
 const { loadTokens, refreshToken } = require('./spotifyOAuth');
 
 const XP_FILE = './xp.json';
