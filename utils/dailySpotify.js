@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { getAccessToken } = require('../spotifyOAuth');
 
-const CONFIG_PATH = path.join(__dirname, 'config', 'dailySpotify.json');
+const CONFIG_PATH = path.join(__dirname, '../config/dailySpotify.json');
 let config = {};
 let usedTracks = {};
 
@@ -24,6 +24,19 @@ function saveDailyConfig() {
     config[guildId].used = [...(usedTracks[guildId] || [])];
   }
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+}
+
+// ✅ New: Get config safely per guild
+function getDailySpotifyConfig(guildId) {
+  if (!config[guildId]) config[guildId] = {};
+  return config[guildId];
+}
+
+// ✅ New: Save specific key:value for a guild
+function saveDailySpotifyConfig(guildId, key, value) {
+  if (!config[guildId]) config[guildId] = {};
+  config[guildId][key] = value;
+  saveDailyConfig();
 }
 
 function getGuildDailyConfig() {
@@ -84,12 +97,12 @@ async function sendDailySpotifyMessage(client, guildId, channel) {
   const content = (guildConf.message || '🎵 **{track}** by *{artist}*\n{url}')
     .replace(/\{[^}]+\}/g, match => variables[match] || match);
 
-  if (guildConf.embed) {
+  if (guildConf.embedEnabled) {
     await channel.send({
       embeds: [{
         title: `${variables['{track}']}`,
         description: `${variables['{artist}']}`,
-        url: variables['{url}'],
+        url: variables['{url}'] || '',
         image: { url: variables['{cover}'] },
         footer: { text: `${variables['{day}']} • ${variables['{date}']} at ${variables['{time}']}` },
         color: 0x1DB954
@@ -105,6 +118,8 @@ module.exports = {
   saveDailyConfig,
   updateGuildConfig,
   getGuildDailyConfig,
+  getDailySpotifyConfig,
+  saveDailySpotifyConfig,
   getNextTrack,
   sendDailySpotifyMessage
 };
