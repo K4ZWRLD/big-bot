@@ -1,6 +1,6 @@
 const axios = require('axios');
-const fs = require('fs');
-const { loadSpotifyTokens, refreshAccessToken } = require('./spotifyOAuth');  // Add this import
+const fs = require('fs')
+const { loadTokens, refreshToken } = require('./spotifyOAuth');
 
 const XP_FILE = './xp.json';
 const LISTENING_HISTORY_FILE = './listening_history.json';
