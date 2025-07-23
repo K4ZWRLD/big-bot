@@ -21,13 +21,17 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Load commands
+// Load commands safely
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 const commands = [];
 for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
-  commands.push(command);
+  if (command?.data?.name && typeof command.execute === 'function') {
+    client.commands.set(command.data.name, command);
+    commands.push(command);
+  } else {
+    console.warn(`⚠️ Skipped invalid command file: ${file}`);
+  }
 }
 
 // Register slash commands
