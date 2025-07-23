@@ -1,7 +1,7 @@
 // presenceHandler.js
 const { loadConfig } = require('./utils/configUtils'); // Adjust path if needed
 
-module.exports = async function handlePresenceUpdate(oldPresence, newPresence, client) {
+async function handlePresenceUpdate(oldPresence, newPresence, client) {
   if (!newPresence || !newPresence.userId || !newPresence.activities) return;
 
   const config = loadConfig(); // Load your config.json or similar
@@ -11,7 +11,9 @@ module.exports = async function handlePresenceUpdate(oldPresence, newPresence, c
 
   const keywordRoles = guildConfig.keywordRoles; // { keyword: roleId }
   const member = await newPresence.guild.members.fetch(newPresence.userId);
-  const activityString = newPresence.activities.map(a => `${a.state} ${a.name} ${a.details}`.toLowerCase()).join(' ');
+  const activityString = newPresence.activities
+    .map(a => `${a.state || ''} ${a.name || ''} ${a.details || ''}`.toLowerCase())
+    .join(' ');
 
   for (const [keyword, roleId] of Object.entries(keywordRoles)) {
     const hasKeyword = activityString.includes(keyword.toLowerCase());
@@ -23,4 +25,6 @@ module.exports = async function handlePresenceUpdate(oldPresence, newPresence, c
       await member.roles.remove(roleId).catch(console.error);
     }
   }
-};
+}
+
+module.exports = { handlePresenceUpdate };
