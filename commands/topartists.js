@@ -8,7 +8,6 @@ module.exports = {
     .setDMPermission(false)
     .setDefaultMemberPermissions(0)
     .setNSFW(false)
-    .setCategory?.('Spotify') // Will only work if you added `.setCategory` support in your help system
     .addStringOption(opt =>
       opt.setName('user')
         .setDescription('User ID (optional, defaults to you)')
@@ -33,7 +32,7 @@ module.exports = {
       content: top.length
         ? `🎨 **Top Artists for <@${userId}>**\n\n${top.join('\n')}`
         : '❌ No listening history found.',
-      ephemeral: true,
+      flags: 64
     });
   },
 };
