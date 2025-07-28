@@ -1,4 +1,5 @@
-const { updateGuildConfig } = require('../utils/dailySpotify');
+const { SlashCommandBuilder } = require('discord.js');
+const { saveDailySpotifyConfig } = require('../utils/dailySpotify');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -17,12 +18,10 @@ module.exports = {
     const message = interaction.options.getString('message');
     const useEmbed = interaction.options.getBoolean('useembed') ?? false;
 
-    updateGuildConfig(guildId, {
-      message,
-      embedEnabled: useEmbed
-    });
+    // Save both the message and embed toggle
+    saveDailySpotifyConfig(guildId, 'message', message);
+    saveDailySpotifyConfig(guildId, 'embedEnabled', useEmbed);
 
-    await interaction.reply({ content: '✅ Message updated.', flags: 64 });
+    await interaction.reply({ content: '✅ Daily song message and embed preference updated.', flags: 64 });
   }
 };
-
