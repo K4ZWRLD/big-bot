@@ -43,7 +43,8 @@ async function handlePresenceUpdate(client, oldPresence, newPresence) {
 
   const customStatus = newPresence.activities.find(act => act.type === 4);
   const statusText = customStatus?.state?.toLowerCase() || '';
-
+console.log(`🕵️ Status for ${member.user.tag}:`, statusText);
+  
   const hasKeyword = keywords.some(keyword => statusText.includes(keyword));
   const hasRole = member.roles.cache.has(roleId);
 
