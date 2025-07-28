@@ -50,7 +50,7 @@ module.exports = {
     if (!tokenObj) {
       return interaction.reply({
         content: `You need to link your Spotify account first. Please [click here to login](${process.env.SERVER_URL}/auth/spotify?user=${discordUserId})`,
-        flags: 64,
+  flags: 64,
       });
     }
 
@@ -93,7 +93,7 @@ module.exports = {
         .setColor(0x1DB954)
         .setTimestamp();
 
-      interaction.reply({ embeds: [embed], flags: 64 });
+      interaction.reply({ embeds: [embed] });
     } catch (e) {
       console.error('Spotify API error:', e.response?.data || e.message);
       interaction.reply({ content: 'Failed to get currently playing track.', flags: 64 });
