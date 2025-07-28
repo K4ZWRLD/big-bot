@@ -14,7 +14,7 @@ module.exports = {
   category: 'Status Rewards',
 
   async execute(interaction) {
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+    if (!interaction.memberPermissions?.has(PermissionsBitField.Flags.ManageRoles)) {
       return interaction.reply({
         content: '❌ You need the **Manage Roles** permission to use this command.',
         ephemeral: true,
@@ -33,5 +33,5 @@ module.exports = {
       content: `✅ The keyword role has been set to **${role.name}**.`,
       ephemeral: true,
     });
-  }
+  },
 };
