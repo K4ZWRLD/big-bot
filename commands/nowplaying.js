@@ -2,8 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const axios = require('axios');
 const fs = require('fs');
 
-const TOKENS_PATH = './spotify_tokens.json';
-
+const TOKENS_PATH = './data/spotify_tokens.json';
 function loadTokens() {
   if (!fs.existsSync(TOKENS_PATH)) return {};
   return JSON.parse(fs.readFileSync(TOKENS_PATH));
