@@ -35,10 +35,14 @@ module.exports = {
     const channel = interaction.options.getChannel('channel');
     const message = interaction.options.getString('message');
 
+    // Deep null & type safety
     if (
       !channel ||
-      (channel.type !== ChannelType.GuildText &&
-       channel.type !== ChannelType.GuildAnnouncement)
+      typeof channel.id !== 'string' ||
+      (
+        channel.type !== ChannelType.GuildText &&
+        channel.type !== ChannelType.GuildAnnouncement
+      )
     ) {
       return interaction.reply({
         content: '❌ Please select a valid **text-based** channel.',
@@ -47,7 +51,7 @@ module.exports = {
     }
 
     const config = getConfig();
-    if (!config[interaction.guild.id]) config[interaction.guild.id] = {};
+    if (!config[interaction.guild?.id]) config[interaction.guild.id] = {};
 
     config[interaction.guild.id].channelId = channel.id;
     config[interaction.guild.id].message = message;
