@@ -12,9 +12,9 @@ function saveTokens(tokens) {
   fs.writeFileSync(tokensPath, JSON.stringify(tokens, null, 2));
 }
 
-async function refreshToken(userId) {
+async function refreshToken(discordUserId) {
   const tokens = loadTokens();
-  const tokenData = tokens[userId];
+  const tokenData = tokens[discordUserId];
 
   if (!tokenData || !tokenData.refresh_token) return null;
 
@@ -33,22 +33,22 @@ async function refreshToken(userId) {
     });
 
     const newAccessToken = res.data.access_token;
-    tokens[userId].access_token = newAccessToken;
-    tokens[userId].expires_at = Date.now() + res.data.expires_in * 1000;
+    tokens[discordUserId].access_token = newAccessToken;
+    tokens[discordUserId].expires_at = Date.now() + res.data.expires_in * 1000;
     saveTokens(tokens);
 
     return newAccessToken;
   } catch (err) {
-    console.error('Error refreshing token for user', userId, err.response?.data || err.message);
+    console.error('Error refreshing token for user', discordUserId, err.response?.data || err.message);
     return null;
   }
 }
 
 async function refreshSpotifyTokens() {
   const tokens = loadTokens();
-  for (const userId in tokens) {
-    if (Date.now() >= (tokens[userId].expires_at || 0)) {
-      await refreshToken(userId);
+  for (const discordUserId in tokens) {
+    if (Date.now() >= (tokens[discordUserId].expires_at || 0)) {
+      await refreshToken(discordUserId);
     }
   }
 }
@@ -57,6 +57,7 @@ async function refreshSpotifyTokens() {
 function handleSpotifyOAuth(app) {
   // Redirect user to Spotify authorization URL
   app.get('/auth/spotify', (req, res) => {
+    const discordUserId = req.query.user;
     const scopes = [
       'user-read-private',
       'user-read-email',
@@ -68,15 +69,18 @@ function handleSpotifyOAuth(app) {
     const redirectUri = encodeURIComponent(process.env.SPOTIFY_REDIRECT_URI);
     const clientId = process.env.SPOTIFY_CLIENT_ID;
 
-    const authUrl = `https://accounts.spotify.com/authorize?response_type=code&client_id=${clientId}&scope=${scopes}&redirect_uri=${redirectUri}`;
+    const authUrl = `https://accounts.spotify.com/authorize?` +
+      `response_type=code&client_id=${clientId}&scope=${scopes}&redirect_uri=${redirectUri}&state=${discordUserId}`;
+    
     res.redirect(authUrl);
   });
 
   // Spotify OAuth callback
   app.get('/auth/spotify/callback', async (req, res) => {
     const code = req.query.code || null;
+    const discordUserId = req.query.state;
 
-    if (!code) return res.status(400).send('Authorization code missing');
+    if (!code || !discordUserId) return res.status(400).send('Missing authorization code or user ID');
 
     try {
       const body = new URLSearchParams({
@@ -95,20 +99,18 @@ function handleSpotifyOAuth(app) {
       const refreshToken = tokenRes.data.refresh_token;
       const expiresIn = tokenRes.data.expires_in;
 
-      // Get user info to identify userId
       const userRes = await axios.get('https://api.spotify.com/v1/me', {
         headers: { Authorization: `Bearer ${accessToken}` }
       });
 
-      const userId = userRes.data.id;
+      const spotifyUserId = userRes.data.id;
 
-      // Save tokens
       const tokens = loadTokens();
-      tokens[userId] = {
+      tokens[discordUserId] = {
         access_token: accessToken,
         refresh_token: refreshToken,
         expires_at: Date.now() + expiresIn * 1000,
-        id: userId
+        spotify_id: spotifyUserId
       };
       saveTokens(tokens);
 
@@ -127,4 +129,3 @@ module.exports = {
   refreshSpotifyTokens,
   handleSpotifyOAuth,
 };
-
