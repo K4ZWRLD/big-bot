@@ -1,5 +1,4 @@
-const { SlashCommandBuilder } = require('discord.js');
-const { saveJson, loadJson } = require('../utils/dailySpotify');
+const { updateGuildConfig } = require('../utils/dailySpotify');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -14,10 +13,16 @@ module.exports = {
   category: 'Spotify',
 
   async execute(interaction) {
-    const config = loadJson('./config/dailySpotify.json');
-    config.message = interaction.options.getString('message');
-    config.embed = interaction.options.getBoolean('useembed') ?? false;
-    saveJson('./config/dailySpotify.json', config);
+    const guildId = interaction.guildId;
+    const message = interaction.options.getString('message');
+    const useEmbed = interaction.options.getBoolean('useembed') ?? false;
+
+    updateGuildConfig(guildId, {
+      message,
+      embedEnabled: useEmbed
+    });
+
     await interaction.reply({ content: '✅ Message updated.', flags: 64 });
   }
 };
+
