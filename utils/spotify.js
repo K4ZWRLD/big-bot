@@ -28,12 +28,17 @@ async function refreshAccessToken(discordUserId, tokenObj) {
   };
 
   try {
-    const res = await axios.post('https://accounts.spotify.com/api/token', body.toString(), { headers });
+    const res = await axios.post(
+      'https://accounts.spotify.com/api/token',
+      body.toString(),
+      { headers }
+    );
 
     const updatedToken = {
       ...tokenObj,
       access_token: res.data.access_token,
-      expires_at: Date.now() + res.data.expires_in * 1000
+      expires_at: Date.now() + res.data.expires_in * 1000,
+      refresh_token: res.data.refresh_token || tokenObj.refresh_token
     };
 
     const tokens = loadTokens();
