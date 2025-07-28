@@ -1,23 +1,23 @@
-const { 
-  SlashCommandBuilder, 
-  PermissionsBitField, 
-  ChannelType, 
-  MessageFlags 
+const {
+  SlashCommandBuilder,
+  PermissionsBitField,
+  ChannelType,
+  MessageFlags
 } = require('discord.js');
 const { getConfig, updateConfig } = require('../keywordRoleHandler');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('setmsgchannel')
-    .setDescription('Set the channel and message template for keyword role notifications')
+    .setDescription('Configure the channel and message format for keyword role alerts')
     .addChannelOption(option =>
       option.setName('channel')
-        .setDescription('Channel where the bot should send role notifications')
+        .setDescription('Channel where role notifications will be sent')
         .setRequired(true)
     )
     .addStringOption(option =>
       option.setName('message')
-        .setDescription('Message template (use {user} and {role})')
+        .setDescription('Template (use {user}, {role}, and optionally {keyword})')
         .setRequired(true)
         .setMaxLength(2000)
     ),
@@ -28,39 +28,39 @@ module.exports = {
     if (!interaction.memberPermissions.has(PermissionsBitField.Flags.ManageRoles)) {
       return interaction.reply({
         content: '❌ You need the **Manage Roles** permission to use this command.',
-        flags: MessageFlags.Ephemeral,
+        flags: MessageFlags.Ephemeral
       });
     }
 
     const channel = interaction.options.getChannel('channel');
     const message = interaction.options.getString('message');
 
-    // Deep null & type safety
+    // Validate selected channel
     if (
       !channel ||
       typeof channel.id !== 'string' ||
-      (
-        channel.type !== ChannelType.GuildText &&
-        channel.type !== ChannelType.GuildAnnouncement
-      )
+      ![ChannelType.GuildText, ChannelType.GuildAnnouncement].includes(channel.type)
     ) {
       return interaction.reply({
-        content: '❌ Please select a valid **text-based** channel.',
-        flags: MessageFlags.Ephemeral,
+        content: '❌ Please choose a valid **text-based** channel.',
+        flags: MessageFlags.Ephemeral
       });
     }
 
+    // Retrieve and update config
     const config = getConfig();
-    if (!config[interaction.guild?.id]) config[interaction.guild.id] = {};
+    const guildId = interaction.guild.id;
+    if (!config[guildId]) config[guildId] = {};
 
-    config[interaction.guild.id].channelId = channel.id;
-    config[interaction.guild.id].message = message;
+    config[guildId].channelId = channel.id;
+    config[guildId].message = message;
+    config[guildId].lastUpdated = Date.now(); // Optional timestamp tracker
 
     updateConfig(config);
 
     return interaction.reply({
-      content: `✅ Notifications will be sent in ${channel} with the message:\n\`\`\`\n${message}\n\`\`\``,
-      flags: MessageFlags.Ephemeral,
+      content: `✅ Notifications will be sent in ${channel} using this template:\n\`\`\`\n${message}\n\`\`\``,
+      flags: MessageFlags.Ephemeral
     });
   }
 };
