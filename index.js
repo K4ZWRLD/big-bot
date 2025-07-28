@@ -8,7 +8,20 @@ const { fetchAndLogCurrentlyPlaying } = require('./scrobbleLogger');
 const { handlePresenceUpdate } = require('./presenceHandler');
 const { loadDailyConfig, getGuildDailyConfig, getNextTrack, sendDailySpotifyMessage } = require('./utils/dailySpotify');
 const config = require('./config.json');
+const xpData = require('./data/xp.json');
+const customEvents = require('./data/events.json');
 
+const saveXpData = () => fs.writeFileSync('./data/xp.json', JSON.stringify(xpData, null, 2));
+const saveEvents = () => fs.writeFileSync('./data/events.json', JSON.stringify(customEvents, null, 2));
+
+const commandContext = {
+  xpData,
+  customEvents,
+  saveXpData,
+  saveEvents,
+  client: client,
+  commands: client.commands,
+};
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
