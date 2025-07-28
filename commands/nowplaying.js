@@ -44,7 +44,7 @@ module.exports = {
 
     if (!tokens[discordUserId]) {
       return interaction.reply({
-        content: `You need to link your Spotify account first. Please [click here to login](${process.env.SERVER_URL}/login?user=${discordUserId})`,
+        content: `You need to link your Spotify account first. Please [click here to login](${process.env.SERVER_URL}/auth/spotify?user=${discordUserId})`,
         flags: 64,
       });
     }
