@@ -1,4 +1,9 @@
-const { SlashCommandBuilder, PermissionsBitField } = require('discord.js');
+const { 
+  SlashCommandBuilder, 
+  PermissionsBitField, 
+  ChannelType, 
+  MessageFlags 
+} = require('discord.js');
 const { getConfig, updateConfig } = require('../keywordRoleHandler');
 
 module.exports = {
@@ -20,21 +25,23 @@ module.exports = {
   category: 'Keyword Roles',
 
   async execute(interaction) {
-    // ✅ Fixed permission check
     if (!interaction.memberPermissions.has(PermissionsBitField.Flags.ManageRoles)) {
       return interaction.reply({
         content: '❌ You need the **Manage Roles** permission to use this command.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
     const channel = interaction.options.getChannel('channel');
     const message = interaction.options.getString('message');
 
-    if (!channel.isTextBased()) {
+    if (
+      channel.type !== ChannelType.GuildText &&
+      channel.type !== ChannelType.GuildAnnouncement
+    ) {
       return interaction.reply({
         content: '❌ Please select a valid **text-based** channel.',
-        ephemeral: true,
+        flags: MessageFlags.Ephemeral,
       });
     }
 
@@ -48,7 +55,7 @@ module.exports = {
 
     return interaction.reply({
       content: `✅ Notifications will be sent in ${channel} with the message:\n\`\`\`\n${message}\n\`\`\``,
-      ephemeral: true,
+      flags: MessageFlags.Ephemeral,
     });
   }
 };
