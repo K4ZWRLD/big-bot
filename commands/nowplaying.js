@@ -13,10 +13,10 @@ function saveTokens(data) {
   fs.writeFileSync(TOKENS_PATH, JSON.stringify(data, null, 2));
 }
 
-async function refreshAccessToken(clientId, clientSecret, refreshToken) {
+async function refreshAccessToken(clientId, clientSecret, tokenObj) {
   const params = new URLSearchParams({
     grant_type: 'refresh_token',
-    refresh_token: refreshToken,
+    refresh_token: tokenObj.refresh_token,
   });
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
@@ -28,45 +28,46 @@ async function refreshAccessToken(clientId, clientSecret, refreshToken) {
     },
   });
 
-  return res.data;
+  return {
+    ...tokenObj,
+    access_token: res.data.access_token,
+    expires_at: Date.now() + res.data.expires_in * 1000,
+    refresh_token: res.data.refresh_token || tokenObj.refresh_token
+  };
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('nowplaying')
     .setDescription('Show your currently playing Spotify track'),
-  
+
   category: 'Spotify',
 
   async execute(interaction) {
     const discordUserId = interaction.user.id;
     const tokens = loadTokens();
 
-    if (!tokens[discordUserId]) {
+    const tokenObj = tokens[discordUserId];
+    if (!tokenObj) {
       return interaction.reply({
         content: `You need to link your Spotify account first. Please [click here to login](${process.env.SERVER_URL}/auth/spotify?user=${discordUserId})`,
         flags: 64,
       });
     }
 
-    let { access_token, refresh_token, expires_at } = tokens[discordUserId];
-
-    // Refresh token if expired
-    if (Date.now() > expires_at) {
+    let access_token = tokenObj.access_token;
+    if (Date.now() > tokenObj.expires_at) {
       try {
-        const newTokens = await refreshAccessToken(
+        const refreshed = await refreshAccessToken(
           process.env.SPOTIFY_CLIENT_ID,
           process.env.SPOTIFY_CLIENT_SECRET,
-          refresh_token
+          tokenObj
         );
-
-        access_token = newTokens.access_token;
-        expires_at = Date.now() + newTokens.expires_in * 1000;
-        tokens[discordUserId].access_token = access_token;
-        tokens[discordUserId].expires_at = expires_at;
+        access_token = refreshed.access_token;
+        tokens[discordUserId] = refreshed;
         saveTokens(tokens);
       } catch (e) {
-        console.error('Failed to refresh token:', e);
+        console.error('Failed to refresh token:', e.response?.data || e.message);
         return interaction.reply({
           content: 'Failed to refresh Spotify token. Please link your account again.',
           flags: 64,
