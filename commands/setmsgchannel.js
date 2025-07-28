@@ -36,8 +36,9 @@ module.exports = {
     const message = interaction.options.getString('message');
 
     if (
-      channel.type !== ChannelType.GuildText &&
-      channel.type !== ChannelType.GuildAnnouncement
+      !channel ||
+      (channel.type !== ChannelType.GuildText &&
+       channel.type !== ChannelType.GuildAnnouncement)
     ) {
       return interaction.reply({
         content: '❌ Please select a valid **text-based** channel.',
