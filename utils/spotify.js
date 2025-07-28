@@ -12,40 +12,50 @@ function saveTokens(data) {
   fs.writeFileSync(TOKENS_PATH, JSON.stringify(data, null, 2));
 }
 
-async function refreshAccessToken(userToken) {
-  const { refresh_token } = userToken;
+async function refreshAccessToken(discordUserId, tokenObj) {
+  const { refresh_token } = tokenObj;
 
-  const res = await axios.post('https://accounts.spotify.com/api/token', new URLSearchParams({
+  const body = new URLSearchParams({
     grant_type: 'refresh_token',
     refresh_token,
-  }), {
-    headers: {
-      Authorization: 'Basic ' + Buffer.from(
-        `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
-      ).toString('base64'),
-      'Content-Type': 'application/x-www-form-urlencoded'
-    }
   });
 
-  userToken.access_token = res.data.access_token;
-  userToken.expires_at = Date.now() + res.data.expires_in * 1000;
+  const headers = {
+    Authorization: 'Basic ' + Buffer.from(
+      `${process.env.SPOTIFY_CLIENT_ID}:${process.env.SPOTIFY_CLIENT_SECRET}`
+    ).toString('base64'),
+    'Content-Type': 'application/x-www-form-urlencoded'
+  };
 
-  const tokens = loadTokens();
-  tokens[userToken.id] = userToken;
-  saveTokens(tokens);
+  try {
+    const res = await axios.post('https://accounts.spotify.com/api/token', body.toString(), { headers });
 
-  return userToken.access_token;
+    const updatedToken = {
+      ...tokenObj,
+      access_token: res.data.access_token,
+      expires_at: Date.now() + res.data.expires_in * 1000
+    };
+
+    const tokens = loadTokens();
+    tokens[discordUserId] = updatedToken;
+    saveTokens(tokens);
+
+    return updatedToken.access_token;
+  } catch (err) {
+    console.error('Error refreshing token for Discord ID:', discordUserId, err.response?.data || err.message);
+    return null;
+  }
 }
 
-async function getValidAccessToken(userId, tokenObj) {
+async function getValidAccessToken(discordUserId, tokenObj) {
   if (Date.now() >= tokenObj.expires_at) {
-    return await refreshAccessToken(tokenObj);
+    return await refreshAccessToken(discordUserId, tokenObj);
   }
   return tokenObj.access_token;
 }
 
-async function getCurrentTrack(tokenObj) {
-  const accessToken = await getValidAccessToken(tokenObj.id, tokenObj);
+async function getCurrentTrack(discordUserId, tokenObj) {
+  const accessToken = await getValidAccessToken(discordUserId, tokenObj);
 
   const res = await axios.get('https://api.spotify.com/v1/me/player/currently-playing', {
     headers: { Authorization: `Bearer ${accessToken}` }
@@ -67,8 +77,8 @@ async function getCurrentTrack(tokenObj) {
   };
 }
 
-async function getRecentTracks(tokenObj, limit = 5) {
-  const accessToken = await getValidAccessToken(tokenObj.id, tokenObj);
+async function getRecentTracks(discordUserId, tokenObj, limit = 5) {
+  const accessToken = await getValidAccessToken(discordUserId, tokenObj);
 
   const res = await axios.get(`https://api.spotify.com/v1/me/player/recently-played?limit=${limit}`, {
     headers: { Authorization: `Bearer ${accessToken}` }
