@@ -19,14 +19,15 @@ function saveSpotifyTokens(data) {
  */
 async function refreshAccessToken(discordUserId) {
   const tokens = loadSpotifyTokens();
-  if (!tokens[discordUserId]?.refresh_token) return false;
+  const tokenObj = tokens[discordUserId];
+  if (!tokenObj?.refresh_token) return false;
 
   try {
     const resp = await axios.post(
       'https://accounts.spotify.com/api/token',
       querystring.stringify({
         grant_type: 'refresh_token',
-        refresh_token: tokens[discordUserId].refresh_token,
+        refresh_token: tokenObj.refresh_token,
       }),
       {
         headers: {
@@ -42,10 +43,12 @@ async function refreshAccessToken(discordUserId) {
 
     const { access_token, expires_in, refresh_token: newRefreshToken } = resp.data;
 
-    tokens[discordUserId].access_token = access_token;
-    tokens[discordUserId].expires_at = Date.now() + expires_in * 1000;
-
-    if (newRefreshToken) tokens[discordUserId].refresh_token = newRefreshToken;
+    tokens[discordUserId] = {
+      ...tokenObj,
+      access_token,
+      expires_at: Date.now() + expires_in * 1000,
+      refresh_token: newRefreshToken || tokenObj.refresh_token
+    };
 
     saveSpotifyTokens(tokens);
     console.log(`Refreshed Spotify token for user ${discordUserId}`);
