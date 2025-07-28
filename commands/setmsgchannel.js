@@ -20,7 +20,8 @@ module.exports = {
   category: 'Keyword Roles',
 
   async execute(interaction) {
-    if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageRoles)) {
+    // ✅ Fixed permission check
+    if (!interaction.memberPermissions.has(PermissionsBitField.Flags.ManageRoles)) {
       return interaction.reply({
         content: '❌ You need the **Manage Roles** permission to use this command.',
         ephemeral: true,
