@@ -16,7 +16,7 @@ async function refreshToken(discordUserId) {
   const tokens = loadTokens();
   const tokenData = tokens[discordUserId];
 
-  if (!tokenData || !tokenData.refresh_token) return null;
+  if (!tokenData?.refresh_token) return null;
 
   const body = new URLSearchParams({
     grant_type: 'refresh_token',
@@ -27,17 +27,18 @@ async function refreshToken(discordUserId) {
 
   try {
     const res = await axios.post('https://accounts.spotify.com/api/token', body.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
 
-    const newAccessToken = res.data.access_token;
-    tokens[discordUserId].access_token = newAccessToken;
-    tokens[discordUserId].expires_at = Date.now() + res.data.expires_in * 1000;
-    saveTokens(tokens);
+    tokens[discordUserId] = {
+      ...tokenData,
+      access_token: res.data.access_token,
+      expires_at: Date.now() + res.data.expires_in * 1000,
+      refresh_token: res.data.refresh_token || tokenData.refresh_token
+    };
 
-    return newAccessToken;
+    saveTokens(tokens);
+    return res.data.access_token;
   } catch (err) {
     console.error('Error refreshing token for user', discordUserId, err.response?.data || err.message);
     return null;
@@ -53,9 +54,8 @@ async function refreshSpotifyTokens() {
   }
 }
 
-// Express routes for Spotify OAuth
 function handleSpotifyOAuth(app) {
-  // Redirect user to Spotify authorization URL
+  // Step 1: Redirect to Spotify auth
   app.get('/auth/spotify', (req, res) => {
     const discordUserId = req.query.user;
     const scopes = [
@@ -71,19 +71,21 @@ function handleSpotifyOAuth(app) {
 
     const authUrl = `https://accounts.spotify.com/authorize?` +
       `response_type=code&client_id=${clientId}&scope=${scopes}&redirect_uri=${redirectUri}&state=${discordUserId}`;
-    
+
     res.redirect(authUrl);
   });
 
-  // Spotify OAuth callback
+  // Step 2: Handle callback after Spotify authorization
   app.get('/auth/spotify/callback', async (req, res) => {
-    const code = req.query.code || null;
+    const code = req.query.code;
     const discordUserId = req.query.state;
 
-    if (!code || !discordUserId) return res.status(400).send('Missing authorization code or user ID');
+    if (!code || !discordUserId) {
+      return res.status(400).send('Missing authorization code or Discord user ID');
+    }
 
     try {
-      const body = new URLSearchParams({
+      const tokenBody = new URLSearchParams({
         grant_type: 'authorization_code',
         code,
         redirect_uri: process.env.SPOTIFY_REDIRECT_URI,
@@ -91,30 +93,30 @@ function handleSpotifyOAuth(app) {
         client_secret: process.env.SPOTIFY_CLIENT_SECRET,
       });
 
-      const tokenRes = await axios.post('https://accounts.spotify.com/api/token', body.toString(), {
+      const tokenRes = await axios.post('https://accounts.spotify.com/api/token', tokenBody.toString(), {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
-      const accessToken = tokenRes.data.access_token;
-      const refreshToken = tokenRes.data.refresh_token;
-      const expiresIn = tokenRes.data.expires_in;
+      const { access_token, refresh_token, expires_in } = tokenRes.data;
 
       const userRes = await axios.get('https://api.spotify.com/v1/me', {
-        headers: { Authorization: `Bearer ${accessToken}` }
+        headers: { Authorization: `Bearer ${access_token}` }
       });
 
       const spotifyUserId = userRes.data.id;
 
       const tokens = loadTokens();
       tokens[discordUserId] = {
-        access_token: accessToken,
-        refresh_token: refreshToken,
-        expires_at: Date.now() + expiresIn * 1000,
-        spotify_id: spotifyUserId
+        access_token,
+        refresh_token,
+        expires_at: Date.now() + expires_in * 1000,
+        spotify_id: spotifyUserId,
+        discord_id: discordUserId
       };
       saveTokens(tokens);
 
-      res.send('Spotify authorization successful! You can close this window.');
+      console.log(`Linked Discord ID: ${discordUserId} → Spotify ID: ${spotifyUserId}`);
+      res.send('✅ Spotify authorization successful! You can close this window.');
     } catch (err) {
       console.error('Spotify OAuth error:', err.response?.data || err.message);
       res.status(500).send('Error during Spotify OAuth process');
