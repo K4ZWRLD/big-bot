@@ -1,7 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 
-const TOKENS_PATH = './spotify_tokens.json';
+const TOKENS_PATH = './data/spotify_tokens.json';
 
 function loadTokens() {
   if (!fs.existsSync(TOKENS_PATH)) return {};
